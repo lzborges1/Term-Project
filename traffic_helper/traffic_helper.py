@@ -5,6 +5,9 @@ MAPBOX_BASE_URL = "https://api.mapbox.com/geocoding/v5/mapbox.places"
 TRAFFIC_INCIDENT_BASE_URL = "https://www.mapquestapi.com/traffic/v2/incidents"
 SPEED_LIMITS_BASE_URL = 'https://roads.googleapis.com/v1/speedLimits?parameters&key=SPEED_KEY'
 
+
+
+
 def get_traffic_data(api_endpoint, params):
     # Your code to fetch data from an API
     pass
