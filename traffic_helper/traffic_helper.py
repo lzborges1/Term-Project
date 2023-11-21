@@ -3,7 +3,6 @@ from config import MAPBOX_TOKEN, TRAFFIC_INCIDENT_API_KEY
 
 MAPBOX_BASE_URL = "https://api.mapbox.com/geocoding/v5/mapbox.places" # To create and display data on a map
 TRAFFIC_INCIDENT_BASE_URL = "https://www.mapquestapi.com/traffic/v2/incidents" # Traffic Incidents
-SPEED_LIMITS_BASE_URL = 'https://roads.googleapis.com/v1/speedLimits?parameters&key=SPEED_KEY' # Speed limits 
 TOM_TRAFFIC_DATA_BASE_URL = ""
 
 def get_traffic_data(api_endpoint, params):
