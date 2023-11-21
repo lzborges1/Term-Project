@@ -1,8 +1,8 @@
 import requests
-from config import MAPBOX_TOKEN, TRAFFIC_API_KEY
+from config import MAPBOX_TOKEN, TRAFFIC_INCIDENT_API_KEY
 
 MAPBOX_BASE_URL = "https://api.mapbox.com/geocoding/v5/mapbox.places"
-TRAFFIC_BASE_URL = "https://api.tomtom.com/traffic/services/{version}/{service}/{style}/{zoom}/{x}/{y}.{format}?key={TRAFFIC_API_KEY}"
+TRAFFIC_INCIDENT_BASE_URL = "https://www.mapquestapi.com/traffic/v2/incidents"
 
 def get_traffic_data(api_endpoint, params):
     # Your code to fetch data from an API
