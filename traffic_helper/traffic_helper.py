@@ -1,4 +1,5 @@
 import requests
+import json
 from config import MAPBOX_TOKEN, TRAFFIC_INCIDENT_API_KEY
 
 MAPBOX_BASE_URL = "https://api.mapbox.com/geocoding/v5/mapbox.places" # To create and display data on a map
@@ -7,15 +8,31 @@ TOM_TRAFFIC_DATA_BASE_URL = ""
 
 def get_traffic_data(api_endpoint, params):
     # Your code to fetch data from an API
-    pass
+    response = requests.get(api_endpoint, params=params)
+    # Check if the request was successful
+    if response.status_code == 200:
+        return response.json()  # Return the JSON response if successful
+    else:
+        response.raise_for_status()
 
 def process_raw_data(raw_data):
     # Your code to process raw data
-    pass
+    processed_data = []
+    for item in raw_data['trafficItems']:
+        # Process each item (this is just an example and will depend on the actual structure of your data)
+        processed_data.append({
+            'flow': item['flow'],
+            'coordinates': item['location']['geographic'],
+            'severity': item['severity']
+        })
+    return processed_data
 
 def calculate_traffic_flow(data):
     # Your code to calculate traffic flow
-    pass
+    total_flow = sum(item['flow'] for item in data if 'flow' in item)
+    # Calculate average flow if needed, or return the total
+    average_flow = total_flow / len(data) if data else 0
+    return average_flow
 
 # ... other function definitions ...
 
