@@ -14,7 +14,7 @@ def traffic():
     Code to fetch and process traffic data
     """
     traffic_data = fetch_traffic_data()
-    return render_template('traffic.html', data=traffic_data)
+    return render_template('return.html', data=traffic_data)
 
 def fetch_traffic_data():
     """
@@ -28,7 +28,17 @@ def process_api_response(response):
     Function to process the API response
     Extract relevant traffic data from response
     """
+    # Example of processing JSON response
+    processed_data = []
+    for item in response['traffic_items']:
+        processed_data.append({
+            'location': item['location'],
+            'speed': item['speed'],
+            'delay': item['delay']
+            # ... other relevant traffic data fields
+        })
     return processed_data
+
 
 @app.route('/submit', methods=['POST'])
 def submit():

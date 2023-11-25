@@ -4,7 +4,7 @@ from config import MAPBOX_TOKEN, TRAFFIC_INCIDENT_API_KEY
 
 MAPBOX_BASE_URL = "https://api.mapbox.com/geocoding/v5/mapbox.places" # To create and display data on a map
 TRAFFIC_INCIDENT_BASE_URL = "https://www.mapquestapi.com/traffic/v2/incidents" # Traffic Incidents
-TOM_TRAFFIC_DATA_BASE_URL = ""
+TOM_TRAFFIC_DATA_BASE_URL = "https://api.tomtom.com/traffic/services/4/incidentViewport/-939584.4813015489,-23954526.723651607,14675583.153020501,25043442.895825107/2/-939584.4813015489,-23954526.723651607,14675583.153020501,25043442.895825107/2/true/xml?key={Traffic_API_Key}"
 
 def get_traffic_data(api_endpoint, params):
     # Your code to fetch data from an API
