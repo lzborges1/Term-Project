@@ -1,6 +1,8 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, url_for, redirect
 import requests
 import urllib.parse
+from traffic_helper import get_traffic_data, process_raw_data, calculate_traffic_flow, analyze_traffic_for_route
+from config import MAPBOX_TOKEN, TRAFFIC_API_KEY
 
 app = Flask(__name__)
 
@@ -10,42 +12,15 @@ def index():
 
 @app.route('/traffic', methods=['GET'])
 def traffic():
-    """
-    Code to fetch and process traffic data
-    """
-    traffic_data = fetch_traffic_data()
-    return render_template('return.html', data=traffic_data)
-
-def fetch_traffic_data():
-    """
-    Function to interact with the traffic API
-    """
-    response = requests.get("API_ENDPOINT", params= "API_PARAMS")
-    return process_api_response(response.json())
-
-def process_api_response(response):
-    """
-    Function to process the API response
-    Extract relevant traffic data from response
-    """
-    # Example of processing JSON response
-    processed_data = []
-    for item in response['traffic_items']:
-        processed_data.append({
-            'location': item['location'],
-            'speed': item['speed'],
-            'delay': item['delay']
-            # ... other relevant traffic data fields
-        })
-    return processed_data
-
+    # Assuming you have predefined coordinates for I-95 or you get them from the user somehow
+    route_coordinates = 'specific_latitude,specific_longitude'
+    traffic_data = analyze_traffic_for_route(route_coordinates)
+    return render_template('result.html', data=traffic_data)
 
 @app.route('/submit', methods=['POST'])
 def submit():
-    # Function to handle form submissions
-    # Process submitted data and possibly redirect or update the front end
     return redirect(url_for('traffic'))
-
 
 if __name__ == '__main__':
     app.run(debug=True)
+

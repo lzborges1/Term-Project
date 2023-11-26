@@ -1,6 +1,5 @@
-# traffic_helper.py
 import requests
-from config import MAPBOX_TOKEN, TOMTOM_API_KEY
+from config import MAPBOX_TOKEN, TRAFFIC_API_KEY
 
 MAPBOX_BASE_URL = "https://api.mapbox.com/geocoding/v5/mapbox.places"
 TOM_TRAFFIC_DATA_BASE_URL = "https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json"
@@ -14,7 +13,6 @@ def get_traffic_data(api_endpoint, params):
 
 def process_raw_data(raw_data):
     processed_data = []
-    # Adjust according to the actual structure of the TomTom API response
     for item in raw_data['flowSegmentData']:
         processed_data.append({
             'currentSpeed': item.get('currentSpeed', 'Not Available'),
@@ -31,24 +29,24 @@ def calculate_traffic_flow(data):
 
 def analyze_traffic_for_route(route_coordinates):
     params = {
-        'key': TOMTOM_API_KEY,
+        'key': TRAFFIC_API_KEY,
         'point': route_coordinates,
-        # Add additional parameters as required by the API
+        # Include any other parameters required by the API
     }
-    raw_data = get_traffic_data(TOM_TRAFFIC_DATA_BASE_URL, params)
+    api_endpoint = TOM_TRAFFIC_DATA_BASE_URL
+    raw_data = get_traffic_data(api_endpoint, params)
     processed_data = process_raw_data(raw_data)
     traffic_flow = calculate_traffic_flow(processed_data)
     return traffic_flow
 
 def log_activity(message):
-    
     print(message)
 
 def main():
-    # Example coordinates for a location on I-95
     route_coordinates = '25.782545,-80.299676'
     traffic_info = analyze_traffic_for_route(route_coordinates)
     print(traffic_info)
 
 if __name__ == '__main__':
     main()
+
