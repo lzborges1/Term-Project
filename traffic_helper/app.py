@@ -1,8 +1,9 @@
 from flask import Flask, render_template, request, url_for, redirect
-import requests
-import urllib.parse
 from traffic_helper import get_traffic_data, process_raw_data, calculate_traffic_flow, analyze_traffic_for_route
 from config import MAPBOX_TOKEN, TRAFFIC_API_KEY
+import os
+
+print(os.getcwd())
 
 app = Flask(__name__)
 

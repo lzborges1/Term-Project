@@ -12,14 +12,22 @@ def get_traffic_data(api_endpoint, params):
         response.raise_for_status()
 
 def process_raw_data(raw_data):
+    # Check the type of raw_data
+    print(f"Type of raw_data: {type(raw_data)}")
+
+    # Process the data
     processed_data = []
-    for item in raw_data['flowSegmentData']:
+    if 'flowSegmentData' in raw_data and isinstance(raw_data['flowSegmentData'], dict):
+        item = raw_data['flowSegmentData']
         processed_data.append({
             'currentSpeed': item.get('currentSpeed', 'Not Available'),
             'freeFlowSpeed': item.get('freeFlowSpeed', 'Not Available'),
             'currentTravelTime': item.get('currentTravelTime', 'Not Available'),
             'freeFlowTravelTime': item.get('freeFlowTravelTime', 'Not Available'),
         })
+    else:
+        print("'flowSegmentData' is missing or not a dictionary.")
+
     return processed_data
 
 def calculate_traffic_flow(data):
@@ -49,4 +57,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
