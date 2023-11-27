@@ -12,10 +12,8 @@ def get_traffic_data(api_endpoint, params):
         response.raise_for_status()
 
 def process_raw_data(raw_data):
-    # Check the type of raw_data
     print(f"Type of raw_data: {type(raw_data)}")
 
-    # Process the data
     processed_data = []
     if 'flowSegmentData' in raw_data and isinstance(raw_data['flowSegmentData'], dict):
         item = raw_data['flowSegmentData']
