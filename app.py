@@ -1,10 +1,17 @@
 from flask import Flask, render_template, request, url_for, redirect
-from traffic_helper import get_traffic_data, process_raw_data, calculate_traffic_flow, analyze_traffic_for_route
+from traffic_helper.traffic_helper import get_traffic_data, process_raw_data, calculate_traffic_flow, analyze_traffic_for_route
 import os
+import requests
+from config import MAPBOX_TOKEN
 
 print(os.getcwd())
 
 app = Flask(__name__)
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 # Function to perform geocoding using Mapbox
 def geocode_location(location_name):
@@ -18,9 +25,6 @@ def geocode_location(location_name):
     else:
         response.raise_for_status()
 
-@app.route('/')
-def index():
-    return render_template('index.html')
 
 @app.route('/traffic', methods=['GET'])
 def traffic():

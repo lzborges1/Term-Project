@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>I=95 Traffic Monitor</title>
+<title>I-95 Traffic Monitor</title>
 <style>
   body {
     font-family: 'Calibri', sans-serif;
@@ -29,7 +29,7 @@
     color: #a52a2a; 
   }
 
-  button {
+  a.button {
     background-color: #d2b48c; 
     color: white;
     border: none;
@@ -39,9 +39,11 @@
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
   }
 
-  button:hover {
+  a.button:hover {
     background-color: #a52a2a;
   }
 </style>
@@ -50,7 +52,8 @@
   <div class="container">
     <h1>Welcome to the I-95 Traffic Monitor</h1>
     <p>Get real-time traffic information and updates.</p>
-    <button>Check Traffic</button>
+    <a href="/traffic" class="button">Check Traffic</a>
   </div>
 </body>
 </html>
+
