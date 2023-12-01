@@ -54,6 +54,7 @@ def analyze_traffic_for_route(route_coordinates):
 def log_activity(message):
     print(message)
 
+
 def main():
     location_name = 'New York, NY'
     geocoded_data = geocode_location(location_name)
