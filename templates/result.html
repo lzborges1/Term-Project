@@ -1,69 +1,244 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>I-95 Traffic Results</title>
-<style>
-  body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f5f5dc;
-    color: #8B4513; 
-    margin: 0;
-    padding: 0;
-  }
-
-  .container {
-    width: 80%;
-    margin: 20px auto;
-    padding: 20px;
-    background-color: #f0ebe5;
-    border-radius: 5px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  table, th, td {
-    border: 1px solid #d2b48c; 
-  }
-
-  th, td {
-    padding: 10px;
-    text-align: left;
-  }
-
-  th {
-    background-color: #d2b48c; 
-    color: white;
-  }
-
-  tr:nth-child(even) {
-    background-color: #f0ebe5;
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>I-95 Traffic Results</title>
+  <script src='https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js'></script>
+  <link href='https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css' rel='stylesheet' />
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f5f5dc;
+      color: #8B4513;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      width: 80%;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #f0ebe5;
+      border-radius: 5px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid #d2b48c;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #d2b48c;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f0ebe5;
+    }
+    #traffic-results {
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <h1>Traffic Results for I-95</h1>
-    <div id="map"></div>
-    <table>
-      <tr>
-        <th>Location</th>
-        <th>Speed</th>
-        <th>Delay</th>
-      </tr>
-      <tr>
-        <td>Point A to Point B</td>
-        <td>60 mph</td>
-        <td>5 min</td>
-      </tr>
+    <div id="map" style="width: 100%; height: 300px;"></div>
+    <form id="location-form">
+      <label for="current-location">Current Location:</label>
+      <input type="text" id="current-location" name="current-location" required>
+      <label for="destination">Destination:</label>
+      <input type="text" id="destination" name="destination" required>
+      <button type="submit">Get Traffic</button>
+    </form>
+    <div id="traffic-results"></div>
+    <table id="traffic-table">
+      <!-- Table will be populated dynamically -->
     </table>
-  </head>
-  <body>      
   </div>
+
+  <script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoibGJvcmdlczEiLCJhIjoiY2xwZzBhNTB6MGRycDJscTlqaGJraGViZCJ9.hMLIPk3DjpqDK2F0gl0FTg';
+
+    var map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [-74.0060, 40.7128],
+      zoom: 13
+    });
+
+    map.addControl(new mapboxgl.NavigationControl());
+
+    document.getElementById('location-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      var currentLocation = document.getElementById('current-location').value;
+      var destination = document.getElementById('destination').value;
+
+      if (!currentLocation.trim() || !destination.trim()) {
+        alert("Please enter both current location and destination.");
+        return;
+      }
+
+      Promise.all([geocode(currentLocation), geocode(destination)])
+        .then(function(results) {
+          var startCoords = results[0];
+          var endCoords = results[1];
+
+          if (startCoords && endCoords) {
+            map.flyTo({
+              center: startCoords,
+              zoom: 13
+            });
+
+            getTrafficData(startCoords, endCoords)
+              .then(trafficData => {
+                drawLineAndPopulateTable(startCoords, endCoords, trafficData);
+              });
+          }
+        })
+        .catch(error => {
+          console.error('Geocode Error:', error);
+          alert("Failed to geocode locations. Please check the inputs.");
+        });
+    });
+
+    function geocode(location) {
+      var geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json?access_token=${mapboxgl.accessToken}`;
+      return fetch(geocodingUrl)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok.');
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data.features && data.features.length > 0) {
+            return data.features[0].center;
+          } else {
+            throw new Error('No location found.');
+          }
+        });
+    }
+
+    function getTrafficData(startCoords, endCoords) {
+      fetch('/get_traffic', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ start: startCoords, end: endCoords })
+      })
+      .then(response => response.json())
+      .then(trafficData => {
+        displayTrafficData(trafficData);
+      })
+      .catch(error => console.error('Error fetching traffic data:', error));
+    }
+
+    function displayTrafficData(trafficData) {
+  // Check if trafficData has the necessary information
+  if (!trafficData || !trafficData.details) {
+    console.error('Invalid traffic data received', trafficData);
+    return;
+  }
+
+  // Clearing previous results if any
+  var resultsElement = document.getElementById('traffic-results');
+  resultsElement.innerHTML = ''; 
+
+  // Displaying average speed
+  var averageSpeed = document.createElement('p');
+  averageSpeed.textContent = `Average Speed: ${trafficData.traffic_flow} mph`;
+  resultsElement.appendChild(averageSpeed);
+
+  // If you want to display a summary of the traffic data above the table
+  // You can add that here
+  
+  // The detailed traffic data will be displayed in the table
+  populateTrafficTable(trafficData); // Assuming this function is defined to handle the table population
+}
+
+function drawLineAndPopulateTable(startCoords, endCoords, trafficData) {
+    // Draw a line between startCoords and endCoords
+    if (map.getSource('route')) {
+        // If the route already exists, update its data
+        map.getSource('route').setData({
+            type: 'Feature',
+            properties: {},
+            geometry: {
+                type: 'LineString',
+                coordinates: [startCoords, endCoords]
+            }
+        });
+    } else {
+        // If the route doesn't exist, create it
+        map.addSource('route', {
+            type: 'geojson',
+            data: {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                    type: 'LineString',
+                    coordinates: [startCoords, endCoords]
+                }
+            }
+        });
+
+        map.addLayer({
+            id: 'route',
+            type: 'line',
+            source: 'route',
+            layout: {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            paint: {
+                'line-color': 'red',
+                'line-width': 6
+            }
+        });
+    }
+
+    // Add markers for start and end locations
+    new mapboxgl.Marker({ color: 'green' })
+        .setLngLat(startCoords)
+        .addTo(map);
+
+    new mapboxgl.Marker({ color: 'red' })
+        .setLngLat(endCoords)
+        .addTo(map);
+
+    // Populate the table with traffic data
+    populateTrafficTable(trafficData); // Ensure this function is implemented
+}
+
+    function populateTrafficTable(trafficData) {
+      var table = document.getElementById('traffic-table');
+      table.innerHTML = ''; // Clear existing content
+
+      var header = table.createTHead();
+      var headerRow = header.insertRow(0);
+      var headers = ['Current Speed', 'Free Flow Speed', 'Current Travel Time', 'Free Flow Travel Time'];
+      headers.forEach(function(text, index) {
+        var cell = headerRow.insertCell(index);
+        cell.innerHTML = text;
+      });
+
+      var tbody = table.createTBody();
+      trafficData.details.forEach(function(detail) {
+        var row = tbody.insertRow();
+        Object.values(detail).forEach(function(text, index) {
+          var cell = row.insertCell(index);
+          cell.innerHTML = text;
+        });
+      });
+    }
+  </script>
 </body>
 </html>

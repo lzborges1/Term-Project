@@ -1,4 +1,9 @@
 import requests
+import sys
+
+# Append the directory, not the file itself, to sys.path
+sys.path.append(r"C:\Users\abattiata1\Apps\Desktop\Senior Year\Python\Term-Project")
+
 from config import MAPBOX_TOKEN, TRAFFIC_API_KEY
 
 MAPBOX_BASE_URL = "https://api.mapbox.com/geocoding/v5/mapbox.places"
@@ -46,14 +51,26 @@ def analyze_traffic_for_route(route_coordinates):
         # Add any other parameters required by the TomTom API
     }
     api_endpoint = TOM_TRAFFIC_DATA_BASE_URL
-    raw_data = get_traffic_data(api_endpoint, params)
-    processed_data = process_raw_data(raw_data)
-    traffic_flow = calculate_traffic_flow(processed_data)
-    return traffic_flow
+    try:
+        raw_data = get_traffic_data(api_endpoint, params)
+        processed_data = process_raw_data(raw_data)
+
+        # Assume processed_data is a list of dictionaries with traffic information
+        traffic_flow = calculate_traffic_flow(processed_data)
+        
+        # Construct a response object
+        response = {
+            'traffic_flow': traffic_flow,
+            'details': processed_data,
+            # Include other details as needed
+        }
+        return response
+    except Exception as e:
+        # Handle any exceptions that occur during the API call and processing
+        return {'error': str(e)}, 500
 
 def log_activity(message):
     print(message)
-
 
 def main():
     location_name = 'New York, NY'
@@ -65,6 +82,5 @@ def main():
         print(traffic_info)
     else:
         print("Geocoding failed.")
-
 if __name__ == '__main__':
     main()

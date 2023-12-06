@@ -1,12 +1,14 @@
-from flask import Flask, render_template, request, url_for, redirect
+from flask import Flask, render_template, request, url_for, redirect, jsonify
 from traffic_helper.traffic_helper import get_traffic_data, process_raw_data, calculate_traffic_flow, analyze_traffic_for_route
 import os
 import requests
 from config import MAPBOX_TOKEN
+from flask_cors import CORS
 
 print(os.getcwd())
 
 app = Flask(__name__)
+CORS(app)
 
 
 @app.route('/')
@@ -25,6 +27,34 @@ def geocode_location(location_name):
     else:
         response.raise_for_status()
 
+# New route to handle traffic data requests
+@app.route('/get_traffic', methods=['POST'])
+def get_traffic():
+    try:
+        data = request.json
+        start_coords = data['start']
+        end_coords = data['end']
+        
+        # Ensure the coordinates are provided
+        if not start_coords or not end_coords:
+            return jsonify({'error': 'Missing start or end coordinates'}), 400
+        
+        start_str = f"{start_coords[1]},{start_coords[0]}"  # Ensure correct ordering for lat,lon
+        end_str = f"{end_coords[1]},{end_coords[0]}"
+
+        traffic_info = analyze_traffic_for_route(start_str, end_str)  # Function from your traffic_helper.py
+        
+        # Check if the traffic_info is not empty or null
+        if not traffic_info:
+            return jsonify({'error': 'No traffic information found'}), 404
+        
+        return jsonify(traffic_info)
+    except Exception as e:
+        # Log the exception to the console or a file
+        print(f"Error getting traffic data: {e}")
+        
+        # Return a JSON response with the error message and a 500 status code
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/traffic', methods=['GET'])
 def traffic():
