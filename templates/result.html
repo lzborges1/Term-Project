@@ -26,10 +26,8 @@
       width: 100%;
       border-collapse: collapse;
     }
-    table, th, td {
-      border: 1px solid #d2b48c;
-    }
     th, td {
+      border: 1px solid #d2b48c;
       padding: 10px;
       text-align: left;
     }
@@ -98,7 +96,11 @@
 
             getTrafficData(startCoords, endCoords)
               .then(trafficData => {
-                drawLineAndPopulateTable(startCoords, endCoords, trafficData);
+                displayTrafficData(trafficData);
+              })
+              .catch(error => {
+                console.error('Error fetching traffic data:', error);
+                alert("Failed to get traffic data. Please check the console for more details.");
               });
           }
         })
@@ -127,118 +129,170 @@
     }
 
     function getTrafficData(startCoords, endCoords) {
-      fetch('/get_traffic', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ start: startCoords, end: endCoords })
-      })
-      .then(response => response.json())
-      .then(trafficData => {
-        displayTrafficData(trafficData);
-      })
-      .catch(error => console.error('Error fetching traffic data:', error));
-    }
+  const requestBody = JSON.stringify({ start: startCoords, end: endCoords });
+  console.log('Sending request to /get_traffic with body:', requestBody);
 
-    function displayTrafficData(trafficData) {
-  // Check if trafficData has the necessary information
-  if (!trafficData || !trafficData.details) {
-    console.error('Invalid traffic data received', trafficData);
-    return;
+  return fetch('/get_traffic', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: requestBody
+  })
+  .then(response => {
+    console.log('Server response:', response);
+    if (!response.ok) {
+      console.error('HTTP error!', response.status);
+      return Promise.reject('HTTP error! status: ' + response.status);
+    }
+    return response.json();
+  })
+  .then(trafficData => {
+    console.log('Received traffic data:', trafficData); // Log the received data
+    displayTrafficData(trafficData);
+  })
+  .catch(error => {
+    console.error('Error fetching traffic data:', error);
+    alert("Failed to get traffic data. Please check the console for more details.");
+  });
+}
+
+function displayTrafficData(trafficData) {
+  console.log('Displaying traffic data:', trafficData); // Log the data to be displayed
+  
+  var resultsElement = document.getElementById('traffic-results');
+  resultsElement.innerHTML = ''; // Clear previous results
+
+  // Check if 'traffic_flow' exists and is not null or undefined
+  if (trafficData && 'traffic_flow' in trafficData) {
+    var averageSpeed = document.createElement('p');
+    averageSpeed.textContent = `Average Speed: ${trafficData.traffic_flow} mph`;
+    resultsElement.appendChild(averageSpeed);
+  } else {
+    console.error('Traffic data does not contain traffic flow information.');
+    resultsElement.textContent = 'Average speed data is not available.';
   }
 
-  // Clearing previous results if any
-  var resultsElement = document.getElementById('traffic-results');
-  resultsElement.innerHTML = ''; 
-
-  // Displaying average speed
-  var averageSpeed = document.createElement('p');
-  averageSpeed.textContent = `Average Speed: ${trafficData.traffic_flow} mph`;
-  resultsElement.appendChild(averageSpeed);
-
-  // If you want to display a summary of the traffic data above the table
-  // You can add that here
-  
-  // The detailed traffic data will be displayed in the table
-  populateTrafficTable(trafficData); // Assuming this function is defined to handle the table population
+  // Check if 'details' exists and is an array with at least one element
+  if (trafficData && Array.isArray(trafficData.details) && trafficData.details.length > 0) {
+    // Pass only the 'details' array to the populateTrafficTable function
+    populateTrafficTable(trafficData.details);
+  } else {
+    console.error('Traffic data does not contain details.');
+    var noDetailsMessage = document.createElement('p');
+    noDetailsMessage.textContent = 'Traffic details data is not available.';
+    resultsElement.appendChild(noDetailsMessage);
+  }
 }
 
 function drawLineAndPopulateTable(startCoords, endCoords, trafficData) {
-    // Draw a line between startCoords and endCoords
-    if (map.getSource('route')) {
-        // If the route already exists, update its data
-        map.getSource('route').setData({
-            type: 'Feature',
-            properties: {},
-            geometry: {
-                type: 'LineString',
-                coordinates: [startCoords, endCoords]
-            }
-        });
-    } else {
-        // If the route doesn't exist, create it
-        map.addSource('route', {
-            type: 'geojson',
-            data: {
-                type: 'Feature',
-                properties: {},
-                geometry: {
-                    type: 'LineString',
-                    coordinates: [startCoords, endCoords]
-                }
-            }
-        });
+  // Check if map is initialized
+  if (!map) {
+    console.error('Map is not initialized.');
+    return;
+  }
 
-        map.addLayer({
-            id: 'route',
-            type: 'line',
-            source: 'route',
-            layout: {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            paint: {
-                'line-color': 'red',
-                'line-width': 6
-            }
-        });
-    }
+  // Update or create the route source and layer
+  if (map.getSource('route')) {
+    map.getSource('route').setData({
+      type: 'Feature',
+      properties: {},
+      geometry: {
+        type: 'LineString',
+        coordinates: [startCoords, endCoords]
+      }
+    });
+  } else {
+    map.addSource('route', {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'LineString',
+          coordinates: [startCoords, endCoords]
+        }
+      }
+    });
 
-    // Add markers for start and end locations
-    new mapboxgl.Marker({ color: 'green' })
-        .setLngLat(startCoords)
-        .addTo(map);
+    map.addLayer({
+      id: 'route',
+      type: 'line',
+      source: 'route',
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round'
+      },
+      paint: {
+        'line-color': 'red',
+        'line-width': 6
+      }
+    });
+  }
 
-    new mapboxgl.Marker({ color: 'red' })
-        .setLngLat(endCoords)
-        .addTo(map);
+  // Add start and end markers
+  new mapboxgl.Marker({ color: 'green' })
+    .setLngLat(startCoords)
+    .addTo(map);
 
-    // Populate the table with traffic data
-    populateTrafficTable(trafficData); // Ensure this function is implemented
+  new mapboxgl.Marker({ color: 'red' })
+    .setLngLat(endCoords)
+    .addTo(map);
+
+  // Check if trafficData.details is available before calling populateTrafficTable
+  if (Array.isArray(trafficData) && trafficData.length > 0) {
+    populateTrafficTable(trafficData);
+  } else {
+    console.error('Traffic data details are not available.');
+  }
 }
 
-    function populateTrafficTable(trafficData) {
-      var table = document.getElementById('traffic-table');
-      table.innerHTML = ''; // Clear existing content
+function populateTrafficTable(trafficData) {
+  var table = document.getElementById('traffic-table');
+  table.innerHTML = ''; // Clear existing table contents
 
-      var header = table.createTHead();
-      var headerRow = header.insertRow(0);
-      var headers = ['Current Speed', 'Free Flow Speed', 'Current Travel Time', 'Free Flow Travel Time'];
-      headers.forEach(function(text, index) {
-        var cell = headerRow.insertCell(index);
-        cell.innerHTML = text;
-      });
+  // Define the headers and their corresponding keys in the data object
+  var headers = ['Current Speed', 'Free Flow Speed', 'Current Travel Time', 'Free Flow Travel Time'];
+  var dataKeys = {
+    'Current Speed': 'currentSpeed',
+    'Free Flow Speed': 'freeFlowSpeed',
+    'Current Travel Time': 'currentTravelTime',
+    'Free Flow Travel Time': 'freeFlowTravelTime'
+  };
 
-      var tbody = table.createTBody();
-      trafficData.details.forEach(function(detail) {
-        var row = tbody.insertRow();
-        Object.values(detail).forEach(function(text, index) {
-          var cell = row.insertCell(index);
-          cell.innerHTML = text;
-        });
+  // Create the header row
+  var thead = table.createTHead();
+  var headerRow = thead.insertRow();
+  headers.forEach(function(headerText) {
+    var th = document.createElement('th');
+    th.textContent = headerText;
+    headerRow.appendChild(th);
+  });
+
+  // Create the body of the table and populate it with data
+  var tbody = table.createTBody();
+
+  // Check if trafficData is an array and has elements
+  if (Array.isArray(trafficData) && trafficData.length > 0) {
+    trafficData.forEach(function(detail) {
+      var row = tbody.insertRow();
+      headers.forEach(function(header) {
+        var cell = row.insertCell();
+        var key = dataKeys[header]; // Access the correct property in the detail object
+        // Check if the detail object has the property and it's not null or undefined
+        if (detail.hasOwnProperty(key) && detail[key] !== null && detail[key] !== undefined) {
+          cell.textContent = detail[key];
+        } else {
+          // Use 'N/A' if the property doesn't exist or is null/undefined
+          cell.textContent = 'N/A';
+        }
       });
-    }
-  </script>
-</body>
-</html>
+    });
+  } else {
+    // Handle the case where there is no data to display
+    var row = tbody.insertRow();
+    var cell = row.insertCell();
+    cell.setAttribute('colspan', headers.length);
+    cell.textContent = 'No traffic data available';
+  }
+}
