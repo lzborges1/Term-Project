@@ -61,47 +61,36 @@
   </div>
 
   <script>
-    mapboxgl.accessToken = 'pk.eyJ1IjoibGJvcmdlczEiLCJhIjoiY2xwZzBhNTB6MGRycDJscTlqaGJraGViZCJ9.hMLIPk3DjpqDK2F0gl0FTg';
-
+    // Initialize the map on page load
+    mapboxgl.accessToken = 'pk.eyJ1IjoibGJvcmdlczEiLCJhIjoiY2xwdW84em0yMGx0cTJqcnBzaWp3YWttNiJ9.O2oKgiYAdUgZXnnTMR676Q';
     var map = new mapboxgl.Map({
       container: 'map',
       style: 'mapbox://styles/mapbox/streets-v11',
-      center: [-74.0060, 40.7128],
+      center: [-74.0060, 40.7128], // Default center of the map
       zoom: 13
     });
-
+  
+    // Add navigation control to the map
     map.addControl(new mapboxgl.NavigationControl());
-
+  
     document.getElementById('location-form').addEventListener('submit', function(e) {
       e.preventDefault();
-
+  
       var currentLocation = document.getElementById('current-location').value;
       var destination = document.getElementById('destination').value;
-
+  
       if (!currentLocation.trim() || !destination.trim()) {
         alert("Please enter both current location and destination.");
         return;
       }
-
+  
       Promise.all([geocode(currentLocation), geocode(destination)])
         .then(function(results) {
           var startCoords = results[0];
           var endCoords = results[1];
-
+  
           if (startCoords && endCoords) {
-            map.flyTo({
-              center: startCoords,
-              zoom: 13
-            });
-
-            getTrafficData(startCoords, endCoords)
-              .then(trafficData => {
-                displayTrafficData(trafficData);
-              })
-              .catch(error => {
-                console.error('Error fetching traffic data:', error);
-                alert("Failed to get traffic data. Please check the console for more details.");
-              });
+            drawLineAndPopulateTable(startCoords, endCoords);
           }
         })
         .catch(error => {
@@ -109,16 +98,11 @@
           alert("Failed to geocode locations. Please check the inputs.");
         });
     });
-
+  
     function geocode(location) {
       var geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json?access_token=${mapboxgl.accessToken}`;
       return fetch(geocodingUrl)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok.');
-          }
-          return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
           if (data.features && data.features.length > 0) {
             return data.features[0].center;
@@ -127,6 +111,68 @@
           }
         });
     }
+  
+    function drawLineAndPopulateTable(startCoords, endCoords, trafficData) {
+  // Check if map is initialized
+  if (!map) {
+    console.error('Map is not initialized.');
+    return;
+  }
+
+  // Update or create the route source and layer
+  if (map.getSource('route')) {
+    map.getSource('route').setData({
+      type: 'Feature',
+      properties: {},
+      geometry: {
+        type: 'LineString',
+        coordinates: [startCoords, endCoords]
+      }
+    });
+  } else {
+    map.addSource('route', {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'LineString',
+          coordinates: [startCoords, endCoords]
+        }
+      }
+    });
+
+    map.addLayer({
+      id: 'route',
+      type: 'line',
+      source: 'route',
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round'
+      },
+      paint: {
+        'line-color': 'red',
+        'line-width': 6
+      }
+    });
+  }
+
+  // Add start and end markers
+  new mapboxgl.Marker({ color: 'green' })
+    .setLngLat(startCoords)
+    .addTo(map);
+
+  new mapboxgl.Marker({ color: 'red' })
+    .setLngLat(endCoords)
+    .addTo(map);
+
+  // Check if trafficData.details is available before calling populateTrafficTable
+  if (Array.isArray(trafficData) && trafficData.length > 0) {
+    populateTrafficTable(trafficData);
+  } else {
+    console.error('Traffic data details are not available.');
+  }
+}
 
     function getTrafficData(startCoords, endCoords) {
   const requestBody = JSON.stringify({ start: startCoords, end: endCoords });
