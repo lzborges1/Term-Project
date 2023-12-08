@@ -5,6 +5,14 @@ import requests
 from config import MAPBOX_TOKEN
 from flask_cors import CORS
 import traceback
+import logging
+from logging.handlers import RotatingFileHandler
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+handler = RotatingFileHandler('traffic_app.log', maxBytes=10000, backupCount=3)
+logger.addHandler(handler)
 
 print(os.getcwd())
 
@@ -30,47 +38,52 @@ def geocode_location(location_name):
 @app.route('/get_traffic', methods=['POST'])
 def get_traffic():
     try:
+        # Ensure the request is in JSON format
         if not request.is_json:
-            print("Received non-JSON request")
+            logger.error("Received non-JSON request")
             return jsonify({'error': 'Request body must be JSON'}), 400
 
         data = request.get_json()
-        print(f"Received JSON data: {data}")  # Log the raw JSON data
+        logger.info(f"Received JSON data: {data}")
 
+        # Validate that 'start' and 'end' are in the data
         if 'start' not in data or 'end' not in data:
-            print("JSON data is missing 'start' or 'end' keys")
+            logger.error("JSON data is missing 'start' or 'end' keys")
             return jsonify({'error': 'JSON body must contain start and end coordinates'}), 400
 
         start_coords = data['start']
         end_coords = data['end']
 
-        if not isinstance(start_coords, (list, tuple)) or len(start_coords) != 2:
-            print(f"Start coordinates are in the wrong format: {start_coords}")
+        # Validate the format of 'start' and 'end' coordinates
+        if not (isinstance(start_coords, list) and len(start_coords) == 2):
+            logger.error("Start coordinates are in the wrong format")
             return jsonify({'error': 'Start coordinates are not in the correct format'}), 400
-        if not isinstance(end_coords, (list, tuple)) or len(end_coords) != 2:
-            print(f"End coordinates are in the wrong format: {end_coords}")
+        if not (isinstance(end_coords, list) and len(end_coords) == 2):
+            logger.error("End coordinates are in the wrong format")
             return jsonify({'error': 'End coordinates are not in the correct format'}), 400
 
+        # Format the coordinates for the traffic analysis function
         route_str = f"{start_coords[1]},{start_coords[0]}:{end_coords[1]},{end_coords[0]}"
-        print(f"Formatted route string for analysis: {route_str}")  # Log the route string
+        logger.info(f"Formatted route string for analysis: {route_str}")
 
+        # Perform the traffic analysis
         traffic_info = analyze_traffic_for_route(route_str)
 
-        if not traffic_info or 'error' in traffic_info:
-            error_message = traffic_info.get('error', 'No traffic information found')
-            print(f"Traffic information error: {error_message}")
+        # Check if there is an error in the traffic information
+        if 'error' in traffic_info:
+            error_message = traffic_info['error']
+            logger.error(f"Traffic information error: {error_message}")
             return jsonify({'error': error_message}), 500
-
-        print(f"Traffic information response: {traffic_info}")  # Log the successful traffic info response
+        
+        # If no error, return the traffic information
+        logger.info(f"Traffic information response: {traffic_info}")
         return jsonify(traffic_info)
-
+    
     except KeyError as e:
-        print(f"KeyError: Missing key in JSON data: {e}")
-        traceback.print_exc()
-        return jsonify({'error': 'Missing data: ' + str(e)}), 400
+        logger.error(f"KeyError: Missing key in JSON data: {e}", exc_info=True)
+        return jsonify({'error': f'Missing data: {e}'}), 400
     except Exception as e:
-        print(f"Exception: Error getting traffic data: {e}")
-        traceback.print_exc()
+        logger.error(f"Exception: Error getting traffic data: {e}", exc_info=True)
         return jsonify({'error': 'An unexpected error occurred'}), 500
 
 @app.route('/traffic', methods=['GET'])
