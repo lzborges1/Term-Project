@@ -125,7 +125,7 @@ def main():
     geocoded_data = geocode_location(location_name)
     if geocoded_data and geocoded_data['features']:
         coordinates = geocoded_data['features'][0]['center']
-        route_coordinates = f"{coordinates[1]},{coordinates[0]}"  # lat,lon
+        route_coordinates = f"{coordinates[1]},{coordinates[0]}"  
         traffic_info = analyze_traffic_for_route(route_coordinates)
         log_activity(f"Traffic info: {traffic_info}")
     else:
